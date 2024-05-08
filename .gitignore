@@ -1,6 +1,7 @@
 # свое
-experiments/
-spizdil/
+shit/
+project/Output/*
+project/Data/*
 .DS_Store
 *.pckl
 
