@@ -12,6 +12,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 
 def calculate_required_exp(current, max_level):
@@ -195,89 +196,70 @@ def generate_chart(data: pd.DataFrame, chart_type: str, x: str, y: str, **kwargs
     plt.savefig(f'../Graphics/{filename}')
     plt.close()
 
+def load_data():
+    # Load data from pickle files
+    artifacts = pd.read_pickle('../Data/artifacts.pckl')
+    characters = pd.read_pickle('../Data/characters.pckl')
+    rarities = pd.read_pickle('../Data/rarities.pckl')
 
-# Загрузка данных из файлов
-artifacts = pd.read_pickle('../Data/artifacts.pckl')
-characters = pd.read_pickle('../Data/characters.pckl')
-rarities = pd.read_pickle('../Data/rarities.pckl')
 
-# Объединение данных артефактов с данными персонажей по идентификатору персонажа
-data = pd.merge(artifacts, characters, left_on='id персонажа, исп. артефакт',
-                right_on='id персонажа', how='left')
+    # Merge data
+    data = pd.merge(artifacts, characters, left_on='id персонажа, исп. артефакт', right_on='id персонажа', how='left')
+    data['Редкость артефакта'] = data['Редкость артефакта'].astype('int64')
+    data = pd.merge(data, rarities, on='Редкость артефакта', how='left')
+    data['Требуемый опыт'] = data.apply(lambda row: calculate_required_exp(row['Текущий уровень'], row['Максимально возможный уровень артефакта']), axis=1)
 
-# Приведение данных о редкости артефактов к целочисленному типу
-data['Редкость артефакта'] = data['Редкость артефакта'].astype('int64')
+    return data
 
-# Объединение данных с информацией о редкостях артефактов
-data = pd.merge(data, rarities, on='Редкость артефакта', how='left')
+# def generate_all_reports():
+#     data = load_data()
 
-# Расчет требуемого опыта для каждого артефакта
-data['Требуемый опыт'] = data.apply(lambda row: calculate_required_exp(
-    row['Текущий уровень'], row['Максимально возможный уровень артефакта']), axis=1)
 
-# Генерация и сохранение в файл текстового отчета
-row_criteria = {'Сет артефакта': 'Хроники Чертогов в пустыне'}
-columns = ['Название артефакта', 'Текущий уровень', 'Требуемый опыт']
-reference_tables = {'characters': characters, 'rarities': rarities}
-text_report = generate_text_report(
-    data, reference_tables, row_criteria, columns)
-with open('../Output/text_report.txt', 'w', encoding='utf-8') as f:
-    f.write("Текстовый отчет:\n")
-    f.write(text_report.to_string(index=False))
+#     # Generate text report
+#     row_criteria = {'Сет артефакта': 'Хроники Чертогов в пустыне'}
+#     columns = ['Название артефакта', 'Текущий уровень', 'Требуемый опыт']
+#     reference_tables = {'characters': characters, 'rarities': rarities}
+#     text_report = generate_text_report(data, reference_tables, row_criteria, columns)
+#     with open('../Output/text_report.txt', 'w', encoding='utf-8') as f:
+#         f.write("Текстовый отчет:\n")
+#         f.write(text_report.to_string(index=False))
 
-# Генерация и сохранение сводной таблицы для анализа
-# требуемого опыта в разрезе сетов и видов артефактов
-index = ['Сет артефакта']
-columns = ['Вид артефакта']
-values = 'Требуемый опыт'
-aggfunc = 'sum'
-pivot_table = generate_pivot_table(data, index, columns, values, aggfunc)
-with open('../Output/pivot_table.txt', 'w', encoding='utf-8') as f:
-    f.write("Сводная таблица:\n")
-    f.write(pivot_table.to_string())
+#     # Generate pivot table
+#     index = ['Сет артефакта']
+#     columns = ['Вид артефакта']
+#     values = 'Требуемый опыт'
+#     aggfunc = 'sum'
+#     pivot_table = generate_pivot_table(data, index, columns, values, aggfunc)
+#     with open('../Output/pivot_table.txt', 'w', encoding='utf-8') as f:
+#         f.write("Сводная таблица:\n")
+#         f.write(pivot_table.to_string())
 
-# Формирование статистических отчетов для качественных переменных
-qualitative_vars = ['Сет артефакта', 'Вид артефакта']
-for var in qualitative_vars:
-    freq_table = data[var].value_counts().reset_index()
-    freq_table.columns = [var, 'Частота']
-    freq_table['Доля в %'] = freq_table['Частота'] / len(data) * 100
-    with open(f'../Output/freq_table_{var}.txt', 'w', encoding='utf-8') as f:
-        f.write(f"Статистический отчет для качественной переменной '{var}':\n")
-        f.write(freq_table.to_string(index=False))
+#     # Generate qualitative variable reports
+#     qualitative_vars = ['Сет артефакта', 'Вид артефакта']
+#     for var in qualitative_vars:
+#         freq_table = data[var].value_counts().reset_index()
+#         freq_table.columns = [var, 'Частота']
+#         freq_table['Доля в %'] = freq_table['Частота'] / len(data) * 100
+#         with open(f'../Output/freq_table_{var}.txt', 'w', encoding='utf-8') as f:
+#             f.write(f"Статистический отчет для качественной переменной '{var}':\n")
+#             f.write(freq_table.to_string(index=False))
 
-# Генерация и сохранение отчета о всех артефактах, экипированного на каждого персонажа
-character_artifacts = data.groupby('Имя персонажа')[
-    'Название артефакта'].apply(list).reset_index()
-with open('../Output/character_artifacts.txt', 'w', encoding='utf-8') as f:
-    f.write("Отчет об артефактах, экипированных на каждого персонажа:\n")
-    f.write(character_artifacts.to_string(index=False))
-    
-print('Текстовые отчеты сгенерированы и записаны в папку Output')
+#     # Generate character artifacts report
+#     character_artifacts = data.groupby('Имя персонажа')['Название артефакта'].apply(list).reset_index()
+#     with open('../Output/character_artifacts.txt', 'w', encoding='utf-8') as f:
+#         f.write("Отчет об артефактах, экипированных на каждого персонажа:\n")
+#         f.write(character_artifacts.to_string(index=False))
 
-# Генерация различных графиков для визуализации данных
-generate_chart(data, 'bar', 'Сет артефакта', 'Требуемый опыт',
-               hue='Редкость артефакта',
-               title='Распределение требуемого опыта по сетам и редкости артефактов',
-               filename='bar_set_rarity_required_exp.png')
+#     # Generate charts
+#     generate_chart(data, 'bar', 'Сет артефакта', 'Требуемый опыт', hue='Редкость артефакта', title='Распределение требуемого опыта по сетам и редкости артефактов', filename='bar_set_rarity_required_exp.png')
+#     generate_chart(data, 'hist', 'Текущий уровень', None, bins=20, title='Распределение текущих уровней артефактов', filename='hist_current_level.png')
+#     generate_chart(data, 'boxplot', 'Вид артефакта', 'Текущий уровень', title='Распределение текущих уровней по видам артефактов', filename='boxplot_type_current_level.png')
+#     generate_chart(data, 'scatter', 'Редкость артефакта', 'Текущий уровень', title='Зависимость текущего уровня артефактов от их редкости', filename='scatter_rarity_current_level.png')
+#     character_total_exp = data.groupby('Имя персонажа')['Требуемый опыт'].sum().reset_index()
+#     generate_chart(character_total_exp, 'bar', 'Имя персонажа', 'Требуемый опыт', title='Требуемый опыт для возвышения артефактов каждого персонажа', filename='bar_character_total_required_exp.png')
 
-generate_chart(data, 'hist', 'Текущий уровень', None, bins=20,
-               title='Распределение текущих уровней артефактов',
-               filename='hist_current_level.png')
+#     print('Reports generated and saved in Output and Graphics folders')
 
-generate_chart(data, 'boxplot', 'Вид артефакта', 'Текущий уровень',
-               title='Распределение текущих уровней по видам артефактов',
-               filename='boxplot_type_current_level.png')
 
-generate_chart(data, 'scatter', 'Редкость артефакта', 'Текущий уровень',
-               title='Зависимость текущего уровня артефактов от их редкости',
-               filename='scatter_rarity_current_level.png')
-
-# Генерация графика суммарного требуемого опыта для возвышения артефактов каждого персонажа
-character_total_exp = data.groupby('Имя персонажа')[
-    'Требуемый опыт'].sum().reset_index()
-generate_chart(character_total_exp, 'bar', 'Имя персонажа', 'Требуемый опыт',
-               title='Требуемый опыт для возвышения артефактов каждого персонажа',
-               filename='bar_character_total_required_exp.png')
-
-print('Графические отчеты сгенерированы и записаны в папку Graphics')
+# if __name__ == "main":
+#     generate_all_reports()
