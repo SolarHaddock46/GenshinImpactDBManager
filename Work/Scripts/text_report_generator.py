@@ -117,47 +117,6 @@ def select_row(event):
     row = widget.grid_info()['row']
     selected_row = row
 
-# Function to delete the selected row
-def delete_row():
-    """
-    Удаление выбранной строки из таблицы
-    """
-    global GDS, height, width, top, vrs, pnt, selected_row
-    if selected_row is not None:
-        row_index = selected_row - 1  # Adjust for header row
-        GDS = GDS.drop(GDS.index[row_index]).reset_index(drop=True)
-        height = GDS.shape[0]
-        width = GDS.shape[1]
-        vrs = np.delete(vrs, row_index, axis=0)
-        for j in range(width):
-            if pnt[row_index, j].winfo_exists():
-                pnt[row_index, j].destroy()
-        pnt = np.delete(pnt, row_index, axis=0)
-        for i in range(row_index, height):
-            for j in range(width):
-                pnt[i, j].grid(row=i+1, column=j)
-        selected_row = None
-
-# Function to add a new row to the table
-def add_row():
-    """
-    Добавление новой строки в таблицу
-    """
-    global GDS, height, width, top, vrs, pnt
-    new_row = pd.DataFrame([['' for _ in range(width)]], columns=GDS.columns)
-    GDS = pd.concat([GDS, new_row], ignore_index=True)
-    height = GDS.shape[0]
-    width = GDS.shape[1]
-    new_vrs = np.empty(shape=(1, width), dtype="O")
-    for j in range(width):
-        new_vrs[0, j] = tki.StringVar()
-    vrs = np.concatenate((vrs, new_vrs), axis=0)
-    new_pnt = np.empty(shape=(1, width), dtype="O")
-    for j in range(width):
-        new_pnt[0, j] = tki.Entry(top, textvariable=vrs[height-1, j], bg='#FAF7DF', font=('HYWenHei', 10))
-        new_pnt[0, j].grid(row=height, column=j)
-    pnt = np.concatenate((pnt, new_pnt), axis=0)
-
 # Function to handle report type selection
 def select_report_type(event):
     """

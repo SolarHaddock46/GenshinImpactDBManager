@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
-import Work.Scripts.report_creator as report_creator
+# import Work.Scripts.report_creator as report_creator
+import report_creator
 import graphics_display
 
 class Application(tk.Tk):

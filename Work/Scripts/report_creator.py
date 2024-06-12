@@ -124,8 +124,7 @@ def generate_chart(data: pd.DataFrame, chart_type: str, x: str, y: str, **kwargs
         Исходный DataFrame с данными.
     chart_type : str
         Тип диаграммы
-        (scatter, boxplot, bar, line, heatmap, pairplot, violinplot, regplot,
-        lmplot, hist).
+        (scatter, boxplot, bar, hist).
     x : str
         Имя столбца для оси x.
     y : str
@@ -158,27 +157,6 @@ def generate_chart(data: pd.DataFrame, chart_type: str, x: str, y: str, **kwargs
     elif chart_type == 'bar':
         plt.figure(figsize=(10, 6))
         sns.barplot(data=data, x=x, y=y, **kwargs)
-    elif chart_type == 'line':
-        plt.figure(figsize=(10, 6))
-        sns.lineplot(data=data, x=x, y=y, **kwargs)
-    elif chart_type == 'heatmap':
-        plt.figure(figsize=(10, 8))
-        pivot_data = data.pivot_table(index=kwargs.get('index'), columns=kwargs.get(
-            'columns'), values=kwargs.get('values'), aggfunc=kwargs.get('aggfunc', 'mean'))
-        sns.heatmap(pivot_data, annot=True, cmap='YlGnBu', **kwargs)
-    elif chart_type == 'pairplot':
-        sns.pairplot(data, vars=kwargs.get('vars'), hue=kwargs.get(
-            'hue'), diag_kind=kwargs.get('diag_kind', 'auto'), **kwargs)
-        filename = f"pairplot_{kwargs.get('hue', '')}.png"
-    elif chart_type == 'violinplot':
-        plt.figure(figsize=(10, 6))
-        sns.violinplot(data=data, x=x, y=y, **kwargs)
-    elif chart_type == 'regplot':
-        plt.figure(figsize=(10, 6))
-        sns.regplot(data=data, x=x, y=y, **kwargs)
-    elif chart_type == 'lmplot':
-        sns.lmplot(data=data, x=x, y=y, **kwargs)
-        filename = f"lmplot_{x}_{y}.png"
     elif chart_type == 'hist':
         plt.figure(figsize=(10, 6))
         sns.histplot(data=data, x=x, **kwargs)
