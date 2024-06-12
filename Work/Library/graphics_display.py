@@ -1,9 +1,7 @@
-# gui_application.py
-
 import tkinter as tki
 from tkinter import ttk
 from PIL import Image, ImageTk
-import report_creator  # Import the refactored report_creator module
+import report_creator 
 
 # Function to clear the 'top' frame
 def clear_top():

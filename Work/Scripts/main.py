@@ -9,24 +9,24 @@ subprocesses = []
 
 def open_artifacts_window():
     file_path = '../Data/artifacts.pckl'
-    process = subprocess.Popen(['python', 'data_view.py', file_path])
+    process = subprocess.Popen(['python', '../Library/data_view.py', file_path])
     subprocesses.append(process)
 
 def open_characters_window():
     file_path = '../Data/characters.pckl'
-    process = subprocess.Popen(['python', 'data_view.py', file_path])
+    process = subprocess.Popen(['python', '../Library/data_view.py', file_path])
     subprocesses.append(process)
 
 def run_script1():
-    process = subprocess.Popen(['python', 'text_display.py'])
+    process = subprocess.Popen(['python', '../Library/text_display.py'])
     subprocesses.append(process)
 
 def run_script2():
-    process = subprocess.Popen(['python', 'text_report_generator.py'])
+    process = subprocess.Popen(['python', '../Library/text_report_generator.py'])
     subprocesses.append(process)
 
 def run_script3():
-    process = subprocess.Popen(['python', 'graphics_display.py'])
+    process = subprocess.Popen(['python', '../Library/graphics_display.py'])
     subprocesses.append(process)
 
 def wipe_folder(folder_path):

@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Работа с текстовыми отчетами
-Автор: Поляков К. Л.
-"""
-
 import numpy as np
 import pandas as pd
 import tkinter as tki
@@ -116,13 +110,6 @@ def select_row(event):
     widget = event.widget
     row = widget.grid_info()['row']
     selected_row = row
-    
-def generate_and_display_freq_table(data, var):
-    freq_table = data[var].value_counts().reset_index()
-    freq_table.columns = [var, 'Частота']
-    freq_table['Доля в %'] = freq_table['Частота'] / len(data) * 100
-    freq_table.to_csv(f'../Output/freq_table_{var}.csv', index=False, encoding='utf-8')
-    display_report(f"../Output/freq_table_{var}.csv")
 
 # Function to handle report type selection
 def select_report_type(event):
@@ -153,32 +140,14 @@ def generate_report():
     data['Требуемый опыт'] = data.apply(lambda row: report_creator.calculate_required_exp(
         row['Текущий уровень'], row['Максимально возможный уровень артефакта']), axis=1)
     
-    # Get selected report type
-    report_type = report_type_var.get()
-    if report_type == "Сводная таблица":
-        # Generate pivot table report
-        index = ['Сет артефакта']
-        columns = ['Вид артефакта']
-        values = 'Требуемый опыт'
-        aggfunc = 'sum'
-        pivot_table = report_creator.generate_pivot_table(data, index, columns, values, aggfunc)
-        pivot_table.to_csv('../Output/pivot_table.csv', index=True, encoding='utf-8')
-        display_report("../Output/pivot_table.csv")
-    elif report_type == "Частотный анализ для переменной 'Сет артефакта'":
-        generate_and_display_freq_table(data, 'Сет артефакта')
-    elif report_type == "Частотный анализ для переменной 'Вид артефакта'":
-        generate_and_display_freq_table(data, 'Вид артефакта')
-    elif report_type == "Артефакты персонажей":
-        # Generate report on artifacts equipped on each character
-        character_artifacts = data.groupby('Имя персонажа')['Название артефакта'].apply(list).reset_index()
-        
-        # Beautify the array output
-        character_artifacts['Название артефакта'] = character_artifacts['Название артефакта'].apply(lambda x: ', '.join(x))
-        
-        character_artifacts.to_csv('../Output/character_artifacts.csv', index=False, encoding='utf-8')
-        display_report("../Output/character_artifacts.csv")
-    else:
-        print("Неизвестный тип отчета")
+    # Генерация и сохранение в файл текстового отчета
+    user_input = artifacts_var.get()
+    row_criteria = {'Сет артефакта': user_input}
+    columns = ['Название артефакта', 'Текущий уровень', 'Требуемый опыт']
+    reference_tables = {'characters': characters, 'rarities': rarities}
+    text_report = report_creator.generate_text_report(data, reference_tables, row_criteria, columns)
+    text_report.to_csv("../Output/text_report.csv", index=False, encoding="utf-8")
+    display_report("../Output/text_report.csv")
 
 def display_report(filepath):
     """
@@ -211,13 +180,6 @@ def display_report(filepath):
             vrs[i, j] = tki.StringVar(value=str(GDS.iloc[i, j]))
             pnt[i, j] = tki.Entry(top, textvariable=vrs[i, j], bg='#FAF7DF', font=('HYWenHei', 10))
             pnt[i, j].grid(row=i + start_row, column=j)
-    
-    # Auto-resize table cells for the "Артефакты персонажей" report
-    if filepath == "../Output/character_artifacts.csv":
-        for j in range(width):
-            max_length = max(GDS.iloc[:, j].astype(str).apply(len).max(), len(headers[j]))
-            for i in range(height + 1):  # +1 for header row
-                pnt[i-1, j].config(width=max_length)
 
 # Setting up the main Tkinter window
 hex_color = "#00FFFF"  # Define color in hex format
@@ -246,20 +208,13 @@ root.grid_columnconfigure(0, weight=1)
 style = ttk.Style()
 style.configure("TButton", font=('HYWenHei', 12), background='#B2D15B')
 
+# Adding text field for specifying set of artifacts
+artifacts_label = ttk.Label(bottom, text="Сет артефактов для отчета:", font=('HYWenHei', 12))
+artifacts_label.grid(row=0, column=0, padx=(10, 0), pady=10, sticky="e")
+
 artifacts_var = tki.StringVar()
 artifacts_entry = ttk.Entry(bottom, textvariable=artifacts_var, font=('HYWenHei', 12), width=20)
 artifacts_entry.grid(row=0, column=1, columnspan=3, padx=(0, 10), pady=10, sticky="we")
-
-# Adding dropdown menu for selecting report type
-report_type_label = ttk.Label(bottom, text="Тип отчета:", font=('HYWenHei', 12))
-report_type_label.grid(row=0, column=0, padx=(10, 0), pady=10, sticky="e")
-
-report_type_var = tki.StringVar()
-report_type_menu = ttk.Combobox(bottom, textvariable=report_type_var, font=('HYWenHei', 12), state='readonly', width=20)
-report_type_menu['values'] = ("Сводная таблица", "Частотный анализ для переменной 'Сет артефакта'", "Частотный анализ для переменной 'Вид артефакта'", "Артефакты персонажей")  # Add available report types
-report_type_menu.current(0)  # Set default report type
-report_type_menu.bind("<<ComboboxSelected>>", select_report_type)
-report_type_menu.grid(row=0, column=1, columnspan=3, padx=(0, 10), pady=10, sticky="we")
 
 # Adding generate button for creating a text report
 generate_btn = ttk.Button(bottom, text='Создать текстовый отчет', style="TButton", command=generate_report)
