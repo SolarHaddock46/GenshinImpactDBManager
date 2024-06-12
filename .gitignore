@@ -1,7 +1,7 @@
 # свое
 shit/
-project/Output/*
-project/Data/*
+Work/Output/*
+Work/Graphics/*
 .DS_Store
 *.pckl
 
