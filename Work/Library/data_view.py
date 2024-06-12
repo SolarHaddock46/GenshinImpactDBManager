@@ -1,187 +1,237 @@
-# -*- coding: utf-8 -*-
 """
-Работа с таблицами
-Автор: Поляков К. Л.
+Просмотр справочников с исходными данными
 """
 
-import numpy as np
 import pandas as pd
 import tkinter as tki
 from tkinter import ttk
 from tkinter import filedialog as fld
 import argparse
+import numpy as np
 
-# Function to clear the 'top' frame
+
 def clear_top():
     """
-    Очистка фрейма top
+    Очищает все виджеты в верхнем фрейме (top).
+
+    Returns
+    -------
+    None.
+
     """
     for widgets in top.winfo_children():
-       widgets.destroy()
+        widgets.destroy()
 
-# Function to read data from Pickle file
-def read_data(pickle_file_path):
+
+def read_data(file_path):
     """
-    Чтение и демонстрация данных
+    Читает данные из файла Pickle и отображает их в таблице.
+
+    Parameters
+    ----------
+    file_path : str
+        Путь к файлу Pickle.
+
+    Returns
+    -------
+    None.
+
     """
-    global GDS, height, width, top, vrs, pnt
-    GDS = pd.read_pickle(pickle_file_path)
-    height = GDS.shape[0]
-    width = GDS.shape[1]
-    
-    # Clear existing widgets
+
+    global GDS, HEIGHT, WIDTH, VRS, PNT
+    GDS = pd.read_pickle(file_path)
+    HEIGHT = GDS.shape[0]
+    WIDTH = GDS.shape[1]
+    # Очистка существующих виджетов
     clear_top()
-    
-    # Display column headers
+    # Отображение заголовков столбцов
     headers = GDS.columns
     for j, header in enumerate(headers):
-        lbl = tki.Label(top, text=header, font=('HYWenHei', 12, 'bold'), bg='#EF9B6C')
+        lbl = tki.Label(top, text=header, font=(
+            'HYWenHei', 12, 'bold'), bg='#EF9B6C')
         lbl.grid(row=0, column=j)
-    
-    # Adjust index for data rows
+    # Корректировка индекса для строк данных
     start_row = 1
-    
-    # Initialize variable and widget arrays
-    vrs = np.empty(shape=(height, width), dtype="O")
-    pnt = np.empty(shape=(height, width), dtype="O")
-    
-    for i in range(height): 
-        for j in range(width): 
-            vrs[i, j] = tki.StringVar()
-            pnt[i, j] = tki.Entry(top, textvariable=vrs[i, j], bg='#FAF7DF', font=('HYWenHei', 10)) 
-            pnt[i, j].grid(row=i+start_row, column=j)
-            pnt[i, j].bind('<Button-1>', select_row)
+    # Инициализация массивов переменных и виджетов
+    VRS = np.empty(shape=(HEIGHT, WIDTH), dtype="O")
+    PNT = np.empty(shape=(HEIGHT, WIDTH), dtype="O")
+    for i in range(HEIGHT):
+        for j in range(WIDTH):
+            VRS[i, j] = tki.StringVar()
+            PNT[i, j] = tki.Entry(
+                top, textvariable=VRS[i, j], bg='#FAF7DF', font=('HYWenHei', 10))
+            PNT[i, j].grid(row=i+start_row, column=j)
+            PNT[i, j].bind('<Button-1>', select_row)
             cnt = GDS.iloc[i, j]
-            vrs[i, j].set(str(cnt))
+            VRS[i, j].set(str(cnt))
 
-# Function to save data to Excel file
+
 def store_excel():
     """
-    Получение даных таблицы из Tcl/Tk
-    с помощью метода get() и сохранение в Excel
+    Сохраняет данные в файл Excel.
+
+    Returns
+    -------
+    None.
+
     """
+
     ftypes = [('Excel файлы', '*.xlsx'), ('Все файлы', '*')]
     dlg = fld.SaveAs(filetypes=ftypes)
     fl = dlg.show()
-    for i in range(height): 
-        for j in range(width): 
-            GDS.iloc[i, j] = pnt[i, j].get()
+    for i in range(HEIGHT):
+        for j in range(WIDTH):
+            GDS.iloc[i, j] = PNT[i, j].get()
     GDS.to_excel(fl, index=False)
 
-# Function to save data to Pickle file
+
 def store_pic():
     """
-    Получение даных таблицы из Tcl/Tk
-    с помощью метода get() и сохранение в pickle
+    Сохраняет данные в файл Pickle.
+
+    Returns
+    -------
+    None.
+
     """
-    for i in range(height): 
-        for j in range(width): 
-            if pnt[i, j].winfo_exists():  # Check if the widget exists
-                GDS.iloc[i, j] = pnt[i, j].get()
-    GDS.to_pickle(pickle_file_path)  # Save to the original Pickle file
+    for i in range(HEIGHT):
+        for j in range(WIDTH):
+            if PNT[i, j].winfo_exists():  # Проверка существования виджета
+                GDS.iloc[i, j] = PNT[i, j].get()
+    GDS.to_pickle(PICKLE_FILE_PATH)  # Сохранение в исходный файл Pickle
 
-selected_row = None
 
-# Function to select a row in the table
+SELECTED_ROW = None
+
+
 def select_row(event):
     """
-    Обработка выбора строки в таблице
+    Выбирает строку при нажатии на ячейку.
+
+    Parameters
+    ----------
+    event : tkinter.Event
+        Событие нажатия на ячейку.
+
+    Returns
+    -------
+    None.
+
     """
-    global selected_row
+    global SELECTED_ROW
     widget = event.widget
     row = widget.grid_info()['row']
-    selected_row = row
+    SELECTED_ROW = row
 
-# Function to delete the selected row
+
 def delete_row():
     """
-    Удаление выбранной строки из таблицы
-    """
-    global GDS, height, width, top, vrs, pnt, selected_row
-    if selected_row is not None:
-        row_index = selected_row - 1  # Adjust for header row
-        GDS = GDS.drop(GDS.index[row_index]).reset_index(drop=True)
-        height = GDS.shape[0]
-        width = GDS.shape[1]
-        vrs = np.delete(vrs, row_index, axis=0)
-        for j in range(width):
-            if pnt[row_index, j].winfo_exists():
-                pnt[row_index, j].destroy()
-        pnt = np.delete(pnt, row_index, axis=0)
-        for i in range(row_index, height):
-            for j in range(width):
-                pnt[i, j].grid(row=i+1, column=j)
-        selected_row = None
+    Удаляет выбранную строку из таблицы.
 
-# Function to add a new row to the table
+    Returns
+    -------
+    None.
+
+    """
+    global GDS, HEIGHT, WIDTH, VRS, PNT, SELECTED_ROW
+    if SELECTED_ROW is not None:
+        row_index = SELECTED_ROW - 1  # Корректировка для строки заголовка
+        GDS = GDS.drop(GDS.index[row_index]).reset_index(drop=True)
+        HEIGHT = GDS.shape[0]
+        WIDTH = GDS.shape[1]
+        VRS = np.delete(VRS, row_index, axis=0)
+        for j in range(WIDTH):
+            if PNT[row_index, j].winfo_exists():
+                PNT[row_index, j].destroy()
+        PNT = np.delete(PNT, row_index, axis=0)
+        for i in range(row_index, HEIGHT):
+            for j in range(WIDTH):
+                PNT[i, j].grid(row=i+1, column=j)
+        SELECTED_ROW = None
+
+
 def add_row():
     """
-    Добавление новой строки в таблицу
+    Добавляет новую строку в таблицу.
+
+    Returns
+    -------
+    None.
+
     """
-    global GDS, height, width, top, vrs, pnt
-    new_row = pd.DataFrame([['' for _ in range(width)]], columns=GDS.columns)
+    global GDS, HEIGHT, WIDTH, VRS, PNT
+    new_row = pd.DataFrame([['' for _ in range(WIDTH)]], columns=GDS.columns)
     GDS = pd.concat([GDS, new_row], ignore_index=True)
-    height = GDS.shape[0]
-    width = GDS.shape[1]
-    new_vrs = np.empty(shape=(1, width), dtype="O")
-    for j in range(width):
+    HEIGHT = GDS.shape[0]
+    WIDTH = GDS.shape[1]
+    new_vrs = np.empty(shape=(1, WIDTH), dtype="O")
+    for j in range(WIDTH):
         new_vrs[0, j] = tki.StringVar()
-    vrs = np.concatenate((vrs, new_vrs), axis=0)
-    new_pnt = np.empty(shape=(1, width), dtype="O")
-    for j in range(width):
-        new_pnt[0, j] = tki.Entry(top, textvariable=vrs[height-1, j], bg='#FAF7DF', font=('HYWenHei', 10))
-        new_pnt[0, j].grid(row=height, column=j)
-    pnt = np.concatenate((pnt, new_pnt), axis=0)
+    VRS = np.concatenate((VRS, new_vrs), axis=0)
+    new_pnt = np.empty(shape=(1, WIDTH), dtype="O")
+    for j in range(WIDTH):
+        new_pnt[0, j] = tki.Entry(top, textvariable=VRS[HEIGHT-1, j],
+                                  bg='#FAF7DF', font=('HYWenHei', 10))
+        new_pnt[0, j].grid(row=HEIGHT, column=j)
+    PNT = np.concatenate((PNT, new_pnt), axis=0)
 
-# Setting up the main Tkinter window
-hex_color = "#00FFFF"  # Define color in hex format
 
+# Настройка главного окна Tkinter
 GDS = pd.DataFrame([])
-height = GDS.shape[0]
-width = GDS.shape[1]
-pnt = np.empty([])
-vrs = np.empty([])
+HEIGHT = GDS.shape[0]
+WIDTH = GDS.shape[1]
+PNT = np.empty([])
+VRS = np.empty([])
 top = []
-pickle_file_path = None  # Initialize the variable to store the Pickle file path
+PICKLE_FILE_PATH = None  
 
-# Построение изображения
 root = tki.Tk()
 
 # Построение таблицы
-top = tki.LabelFrame(root, text="Таблица артефактов", bg='#EF9B6C', font=('HYWenHei', 12))
+top = tki.LabelFrame(root, text="Таблица артефактов",
+                     bg='#EF9B6C', font=('HYWenHei', 12))
 top.grid(column=0, row=0)
-bottom = tki.LabelFrame(root, text="Управление", bg='#D0F69F', font=('HYWenHei', 12))
-bottom.grid(column=0, row=1, sticky="we")  # Add sticky="we" to expand the bottom frame
+bottom = tki.LabelFrame(root, text="Управление",
+                        bg='#D0F69F', font=('HYWenHei', 12))
+# Добавление прнивязки для расширения нижнего фрейма
+bottom.grid(column=0, row=1, sticky="we")
 
-# Set the weight of the column to allow the bottom frame to expand
+# Установка веса столбца для расширения нижнего фрейма
 root.grid_columnconfigure(0, weight=1)
 
-# Create a style for the buttons
+# Создание стиля для кнопок
 style = ttk.Style()
 style.configure("TButton", font=('HYWenHei', 12), background='#B2D15B')
 
-# Adding buttons with their respective functionalities
-btn_0 = ttk.Button(bottom, text='Добавить строку', style="TButton", command=add_row)
+# Добавление кнопок с соответствующими функциями
+btn_0 = ttk.Button(bottom, text='Добавить строку',
+                   style="TButton", command=add_row)
 btn_0.grid(row=0, column=0)
-btn_1 = ttk.Button(bottom, text='Удалить строку', style="TButton", command=delete_row)
+btn_1 = ttk.Button(bottom, text='Удалить строку',
+                   style="TButton", command=delete_row)
 btn_1.grid(row=0, column=1)
-btn_2 = ttk.Button(bottom, text='Очистить таблицу', style="TButton", command=clear_top)
+btn_2 = ttk.Button(bottom, text='Очистить таблицу',
+                   style="TButton", command=clear_top)
 btn_2.grid(row=0, column=2)
-btn_3 = ttk.Button(bottom, text='Сохранить в Excel', style="TButton", command=store_excel)
+btn_3 = ttk.Button(bottom, text='Сохранить в Excel',
+                   style="TButton", command=store_excel)
 btn_3.grid(row=0, column=3)
-btn_4 = ttk.Button(bottom, text='Сохранить в Pickle', style="TButton", command=store_pic)
+btn_4 = ttk.Button(bottom, text='Сохранить в Pickle',
+                   style="TButton", command=store_pic)
 btn_4.grid(row=0, column=4)
-btn_5 = ttk.Button(bottom, text='В меню', style="TButton", command=root.destroy)
+btn_5 = ttk.Button(bottom, text='В меню',
+                   style="TButton", command=root.destroy)
 btn_5.grid(row=0, column=5)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Display and edit a table from a Pickle file.")
-    parser.add_argument("pickle_file_path", help="Path to the Pickle file")
+    parser = argparse.ArgumentParser(
+        description="Отображение и редактирование таблицы из файла Pickle.")
+    parser.add_argument("pickle_file_path", help="Путь к файлу Pickle")
     args = parser.parse_args()
 
-    pickle_file_path = args.pickle_file_path
+    PICKLE_FILE_PATH = args.pickle_file_path
 
-    # Read data from the specified Pickle file path on startup
-    read_data(pickle_file_path)
+    # Чтение данных из указанного файла Pickle при запуске
+    read_data(PICKLE_FILE_PATH)
 
     tki.mainloop()

@@ -1,6 +1,6 @@
 """
 
-ДЗ2
+report_creator
 
 Программа составляет текстовые и графические отчеты на основе данных из ДЗ1.
 Текстовые отчеты сохраняются в папку Output.
@@ -173,17 +173,19 @@ def generate_chart(data: pd.DataFrame, chart_type: str, x: str, y: str, **kwargs
     plt.savefig(f'../Graphics/{filename}')
     plt.close()
 
+
 def load_data():
     # Load data from pickle files
     artifacts = pd.read_pickle('../Data/artifacts.pckl')
     characters = pd.read_pickle('../Data/characters.pckl')
     rarities = pd.read_pickle('../Data/rarities.pckl')
 
-
     # Merge data
-    data = pd.merge(artifacts, characters, left_on='id персонажа, исп. артефакт', right_on='id персонажа', how='left')
+    data = pd.merge(artifacts, characters, left_on='id персонажа, исп. артефакт',
+                    right_on='id персонажа', how='left')
     data['Редкость артефакта'] = data['Редкость артефакта'].astype('int64')
     data = pd.merge(data, rarities, on='Редкость артефакта', how='left')
-    data['Требуемый опыт'] = data.apply(lambda row: calculate_required_exp(row['Текущий уровень'], row['Максимально возможный уровень артефакта']), axis=1)
+    data['Требуемый опыт'] = data.apply(lambda row: calculate_required_exp(
+        row['Текущий уровень'], row['Максимально возможный уровень артефакта']), axis=1)
 
     return data
