@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 import subprocess
+import shutil
+import os
 
 # Global list to keep track of all subprocesses
 subprocesses = []
@@ -27,6 +29,14 @@ def run_script3():
     process = subprocess.Popen(['python', 'graphics_display.py'])
     subprocesses.append(process)
 
+def wipe_folder(folder_path):
+    """
+    Delete and recreate a folder to wipe its contents.
+    """
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path)
+    os.makedirs(folder_path)
+
 def quit_all():
     # Terminate all subprocesses
     for proc in subprocesses:
@@ -37,6 +47,10 @@ def quit_all():
             proc.wait(timeout=2)
         except subprocess.TimeoutExpired:
             proc.kill()
+
+    # Wipe the contents of the graphics and output folders
+    wipe_folder('../Graphics')
+    wipe_folder('../Output')
 
     # Terminate the main window
     menu_window.destroy()
